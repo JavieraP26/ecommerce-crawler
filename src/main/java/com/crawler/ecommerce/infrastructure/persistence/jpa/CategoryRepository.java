@@ -3,9 +3,11 @@ package com.crawler.ecommerce.infrastructure.persistence.jpa;
 import com.crawler.ecommerce.domain.model.Category;
 import com.crawler.ecommerce.domain.model.CategoryStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -47,6 +49,8 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
      * Actualiza totalPages de categoría específica.
      * * Utiliza JPQL UPDATE para performance.
      */
+    @Modifying
+    @Transactional
     @Query("UPDATE Category c SET c.totalPages = :totalPages WHERE c.sourceUrl = :sourceUrl")
     int updateTotalPages(@Param("sourceUrl") String sourceUrl, @Param("totalPages") int totalPages);
 
@@ -57,6 +61,8 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
      * @param status Nuevo estado
      * @return Filas afectadas
      */
+    @Modifying
+    @Transactional
     @Query("UPDATE Category c SET c.status = :status WHERE c.sourceUrl = :sourceUrl")
     int updateStatus(@Param("sourceUrl") String sourceUrl, @Param("status") CategoryStatus status);
 
@@ -67,6 +73,8 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
      * @param completedAt Timestamp finalización
      * @return Filas afectadas
      */
+    @Modifying
+    @Transactional
     @Query("UPDATE Category c SET c.status = 'PAGINACION_COMPLETA', c.lastCrawledAt = :completedAt WHERE c.sourceUrl = :sourceUrl")
     int markCrawlingComplete(@Param("sourceUrl") String sourceUrl, @Param("completedAt") LocalDateTime completedAt);
 
