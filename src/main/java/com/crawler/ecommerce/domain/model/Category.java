@@ -90,6 +90,7 @@ public class Category {
      * Estado de la categoría según resultado del crawling.
      */
     @Column(nullable = false, length = 20)
+    @Builder.Default
     private CategoryStatus status = CategoryStatus.ACTIVA;
 
 
