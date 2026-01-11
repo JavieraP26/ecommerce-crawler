@@ -1,0 +1,52 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+app:
+  scraper:
+    anti-bot:
+      enabled: true
+      delay-min: 1000  # 1s entre requests
+    mercadolibre:
+      source: MERCADO_LIBRE
+      selectors:
+        # LISTADO (scrapeProductsPage)
+        item: li.ui-search-result
+        name: .ui-search-item__title
+        price: .andes-money-amount__fraction
+
+        # FICHA INDIVIDUAL (scrapeProduct)
+        product-name: h1.ui-pdp-title
+        product-current-price: |
+          .andes-money-amount--evening,
+          [class*="price"] .andes-money-amount__fraction,
+          .ui-pdp-price__discount .andes-money-amount__fraction
+        product-previous-price: |
+          .andes-money-amount--previous[class*="old"] .andes-money-amount__fraction,
+          [class*="previous-price"] .andes-money-amount__fraction
+        product-images: |
+          .ui-pdp-gallery img[data-src],
+          .ui-pdp-gallery__figure img,
+          .carousel img[data-src],
+          img[data-src*="mlstatic.com"]
+        product-available: |
+          .ui-pdp-stock-amount__subtitle--in-stock,
+          button[data-testid="buy-now-button"]:not([disabled])
+
+logging:
+  level:
+    com.crawler: DEBUG
+    org.jsoup: WARN
