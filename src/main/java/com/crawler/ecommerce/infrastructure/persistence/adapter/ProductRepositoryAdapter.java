@@ -90,6 +90,6 @@ public class ProductRepositoryAdapter implements ProductRepositoryPort {
      */
     @Override
     public void deleteAllBySourceAndUpdatedBefore(String source, LocalDateTime cutoff) {
-        productRepository.deleteAllBySourceAndUpdatedBefore(source, cutoff);
+        productRepository.deleteAllBySourceAndUpdatedAtBefore(source, cutoff);
     }
 }

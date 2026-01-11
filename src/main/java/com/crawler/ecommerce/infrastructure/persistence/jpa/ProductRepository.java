@@ -94,7 +94,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      * @param source Sitio origen
      * @param cutoff Fecha límite
      */
-    void deleteAllBySourceAndUpdatedBefore(String source, LocalDateTime cutoff);
+    void deleteAllBySourceAndUpdatedAtBefore(String source, LocalDateTime cutoff);
 
 
 
