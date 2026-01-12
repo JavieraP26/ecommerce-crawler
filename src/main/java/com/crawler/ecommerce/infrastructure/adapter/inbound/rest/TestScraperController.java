@@ -1,6 +1,8 @@
 package com.crawler.ecommerce.infrastructure.adapter.inbound.rest;
 
+import com.crawler.ecommerce.domain.model.Product;
 import com.crawler.ecommerce.infrastructure.dto.ScrapedProduct;
+import com.crawler.ecommerce.infrastructure.persistence.adapter.ProductRepositoryAdapter;
 import com.crawler.ecommerce.infrastructure.scraper.product.ProductScraper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,10 +29,12 @@ import java.util.Map;
 public class TestScraperController {
 
     private final ProductScraper productScraper;
+    private final ProductRepositoryAdapter productRepositoryAdapter;
 
     /**
-     * Prueba scraper de producto individual (ficha de producto).
-     * 
+     * Prueba scraper de producto individual (ficha de producto) + persistencia.
+     * Extrae datos del producto y lo guarda en PostgreSQL.
+     *
      * @param url URL completa de la ficha del producto
      * @return Producto extraído o error si falla
      * 
@@ -40,17 +44,18 @@ public class TestScraperController {
     @GetMapping("/product")
     public ResponseEntity<?> testProduct(@RequestParam String url) {
         log.info("Test: Extrayendo producto individual de: {}", url);
-        
+
         if (url == null || url.trim().isEmpty()) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", "URL es requerida", "ejemplo", 
+                    .body(Map.of("error", "URL es requerida", "ejemplo",
                             "GET /api/test/product?url=https://www.mercadolibre.com.ar/.../p/MLA19813486"));
         }
 
         try {
-            ScrapedProduct product = productScraper.scrapeProduct(url);
-            
-            if (product == null) {
+            // 1. SCRAPE
+            ScrapedProduct scraped = productScraper.scrapeProduct(url);
+
+            if (scraped == null) {
                 return ResponseEntity.ok(Map.of(
                         "success", false,
                         "message", "No se pudo extraer el producto. Verifica la URL y los logs.",
@@ -58,19 +63,53 @@ public class TestScraperController {
                 ));
             }
 
+            // 2. MAP DTO → ENTITY
+            Product product = Product.builder()
+                    .sku(scraped.getSku())
+                    .name(scraped.getName())
+                    .currentPrice(scraped.getCurrentPrice())
+                    .previousPrice(scraped.getPreviousPrice())
+                    .available(scraped.isAvailable())
+                    .source(scraped.getSource())
+                    .sourceUrl(scraped.getSourceUrl())
+                    .images(scraped.getImages())
+                    .build();
+
+            // 3. PERSIST (upsert si SKU existe)
+            Product saved = productRepositoryAdapter.findBySku(scraped.getSku())  // ✅
+                    .map(existing -> {
+                        existing.setName(scraped.getName());
+                        existing.setCurrentPrice(scraped.getCurrentPrice());
+                        existing.setPreviousPrice(scraped.getPreviousPrice());
+                        existing.setAvailable(scraped.isAvailable());
+                        existing.setImages(scraped.getImages());
+                        log.info("Actualizando producto existente: {}", existing.getSku());
+                        return productRepositoryAdapter.save(existing);  // ✅
+                    })
+                    .orElseGet(() -> {
+                        log.info("Guardando nuevo producto: {}", product.getSku());
+                        return productRepositoryAdapter.save(product);  // ✅
+                    });
+
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "product", product,
+                    "product", scraped,
+                    "saved", Map.of(
+                            "id", saved.getId(),
+                            "sku", saved.getSku(),
+                            "createdAt", saved.getCreatedAt(),
+                            "updatedAt", saved.getUpdatedAt()
+                    ),
                     "extractedFields", Map.of(
-                            "sku", product.getSku() != null ? product.getSku() : "NO EXTRAÍDO",
-                            "name", product.getName() != null ? product.getName() : "NO EXTRAÍDO",
-                            "currentPrice", product.getCurrentPrice() != null ? product.getCurrentPrice() : "NO EXTRAÍDO",
-                            "previousPrice", product.getPreviousPrice() != null ? product.getPreviousPrice() : "NO HAY",
-                            "imagesCount", product.getImages() != null ? product.getImages().size() : 0,
-                            "available", product.isAvailable()
+                            "sku", scraped.getSku() != null ? scraped.getSku() : "NO EXTRAÍDO",
+                            "name", scraped.getName() != null ? scraped.getName() : "NO EXTRAÍDO",
+                            "currentPrice", scraped.getCurrentPrice() != null ? scraped.getCurrentPrice() : "NO EXTRAÍDO",
+                            "previousPrice", scraped.getPreviousPrice() != null ? scraped.getPreviousPrice() : "NO HAY",
+                            "imagesCount", scraped.getImages() != null ? scraped.getImages().size() : 0,
+                            "available", scraped.isAvailable()
                     )
             ));
-            
+
         } catch (Exception e) {
             log.error("Error en test de producto: {}", url, e);
             return ResponseEntity.internalServerError()

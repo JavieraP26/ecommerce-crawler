@@ -17,34 +17,19 @@ spring:
 
 app:
   scraper:
-    anti-bot:
-      enabled: true
-      delay-min: 1000  # 1s entre requests
     mercadolibre:
-      source: MERCADO_LIBRE
       selectors:
-        # LISTADO (scrapeProductsPage)
-        item: li.ui-search-result
+        # LISTING
         name: .ui-search-item__title
         price: .andes-money-amount__fraction
 
-        # FICHA INDIVIDUAL (scrapeProduct)
+        # DETAIL (todos obligatorios)
         product-name: h1.ui-pdp-title
-        product-current-price: |
-          .andes-money-amount--evening,
-          [class*="price"] .andes-money-amount__fraction,
-          .ui-pdp-price__discount .andes-money-amount__fraction
-        product-previous-price: |
-          .andes-money-amount--previous[class*="old"] .andes-money-amount__fraction,
-          [class*="previous-price"] .andes-money-amount__fraction
+        product-current-price: .ui-pdp-price__second-line .andes-money-amount__fraction
+        product-previous-price: .andes-money-amount--previous .andes-money-amount__fraction
         product-images: |
           .ui-pdp-gallery img[data-src],
-          .ui-pdp-gallery__figure img,
-          .carousel img[data-src],
-          img[data-src*="mlstatic.com"]
-        product-available: |
-          .ui-pdp-stock-amount__subtitle--in-stock,
-          button[data-testid="buy-now-button"]:not([disabled])
+          .carousel img[data-src*="mlstatic"]
 
 logging:
   level:

@@ -1,5 +1,6 @@
 package com.crawler.ecommerce.infrastructure.persistence.jpa;
 
+import com.crawler.ecommerce.domain.model.MarketplaceSource;
 import com.crawler.ecommerce.domain.model.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -29,48 +30,48 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      * Busca producto por SKU y source para evitar colisiones cross-site.
      *
      * @param sku SKU del producto
-     * @param source Sitio origen
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      * @return Producto único si existe
      */
-    Optional<Product> findBySkuAndSource(String sku, String source);
+    Optional<Product> findBySkuAndSource(String sku, MarketplaceSource source);
 
     /**
      * Verifica existencia de producto por SKU y source.
      * Más eficiente que findBySkuAndSource cuando solo se necesita verificación.
      *
      * @param sku SKU candidato
-     * @param source Sitio origen
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      * @return true si existe
      */
-    boolean existsBySkuAndSource(String sku, String source);
+    boolean existsBySkuAndSource(String sku, MarketplaceSource source);
 
     /**
      * Lista productos por source y disponibilidad.
      *
-     * @param source Sitio origen
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      * @param available Estado disponibilidad
      * @return Lista productos filtrados
      */
-    List<Product> findAllBySourceAndAvailable(String source, boolean available);
+    List<Product> findAllBySourceAndAvailable(MarketplaceSource source, boolean available);
 
     /**
      * Obtiene set de SKUs existentes por source para deduplicación.
      * Requiere custom query JPQL para proyección.
      *
-     * @param source Sitio origen
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      * @return Set SKUs únicos
      */
     @Query("SELECT DISTINCT p.sku FROM Product p WHERE p.source = :source")
-    Set<String> findAllSkusBySource(@Param("source") String source);
+    Set<String> findAllSkusBySource(@Param("source") MarketplaceSource source);
 
     /**
      * Cuenta productos por source y disponibilidad.
      *
-     * @param source Sitio origen
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      * @param available Estado disponibilidad
      * @return Total productos
      */
-    long countBySourceAndAvailable(String source, boolean available);
+    long countBySourceAndAvailable(MarketplaceSource source, boolean available);
 
     /**
      * Elimina producto por SKU.
@@ -83,18 +84,18 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      * Elimina todos los productos de un source específico.
      * Útil para limpieza completa de sitio.
      *
-     * @param source Sitio origen
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      */
-    void deleteBySource(String source);
+    void deleteBySource(MarketplaceSource source);
 
     /**
      * Elimina productos viejos por source según cutoff date.
      * Para retención de datos.
      *
-     * @param source Sitio origen
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      * @param cutoff Fecha límite
      */
-    void deleteAllBySourceAndUpdatedAtBefore(String source, LocalDateTime cutoff);
+    void deleteAllBySourceAndUpdatedAtBefore(MarketplaceSource source, LocalDateTime cutoff);
 
 
 

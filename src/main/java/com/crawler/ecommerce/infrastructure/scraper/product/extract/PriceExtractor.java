@@ -1,10 +1,13 @@
 package com.crawler.ecommerce.infrastructure.scraper.product.extract;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Extrae y parsea precios (actual + anterior).
@@ -27,6 +30,33 @@ public class PriceExtractor {
     public BigDecimal extractPrevious(Element element) {
         Element oldPriceEl = element.selectFirst(".andes-money-amount--previous .andes-money-amount__fraction");
         return parsePrice(oldPriceEl);  // null si no existe
+    }
+
+    /**
+     * Extrae precio con selector múltiple (separa por comas).
+     * Devuelve el primer precio válido encontrado en orden de prioridad.
+     */
+    public BigDecimal extract(Document doc, String selector) {
+        if (selector == null || selector.trim().isEmpty()) {
+            return null;
+        }
+        
+        String[] selectors = selector.split(",");
+        
+        for (String sel : selectors) {
+            sel = sel.trim();
+            if (!sel.isEmpty()) {
+                Element priceElement = doc.selectFirst(sel);
+                BigDecimal price = parsePrice(priceElement);
+                if (price != null && price.compareTo(BigDecimal.ZERO) > 0) {
+                    log.debug("Precio encontrado con selector '{}': {}", sel, price);
+                    return price; // Devolver el primer precio válido encontrado
+                }
+            }
+        }
+        
+        log.warn("No se pudo extraer precio con ningún selector: {}", selector);
+        return null;
     }
 
     /**

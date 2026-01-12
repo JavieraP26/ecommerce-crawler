@@ -55,12 +55,14 @@ public class Product {
 
     /**
      * Precio actual del producto en la moneda local del sitio.
+     * Precio preseleccionado en UI (radio button activo).
      */
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal currentPrice;
 
     /**
      * Precio anterior del producto (si existe), utilizado para detectar descuentos.
+     * Solo presente cuando hay precio tachado visible en la página.
      */
     @Column(precision = 12, scale = 2)
     private BigDecimal previousPrice;
@@ -78,7 +80,8 @@ public class Product {
      * Valores esperados: "MercadoLibre", "Paris", etc.
      */
     @Column(nullable = false, length = 50)
-    private String source;
+    @Enumerated(EnumType.STRING)
+    private MarketplaceSource source;
 
     /**
      * URL completa de la ficha del producto en el sitio origen.
@@ -89,9 +92,9 @@ public class Product {
     /**
      * Categoría a la que pertenece el producto (relación opcional).
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private Category category;
+    //@ManyToOne(fetch = FetchType.LAZY)
+    //@JoinColumn(name = "category_id")
+    //private Category category;
 
     /**
      * Lista de URLs de imágenes del producto.

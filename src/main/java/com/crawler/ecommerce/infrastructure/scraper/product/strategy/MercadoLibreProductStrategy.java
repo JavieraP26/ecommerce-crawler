@@ -1,12 +1,12 @@
 package com.crawler.ecommerce.infrastructure.scraper.product.strategy;
 
+import com.crawler.ecommerce.domain.model.MarketplaceSource;
 import com.crawler.ecommerce.infrastructure.dto.ScrapedProduct;
 import com.crawler.ecommerce.infrastructure.scraper.product.extract.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +39,7 @@ public class MercadoLibreProductStrategy implements ProductScrapingStrategy {
     @Value("${app.scraper.mercadolibre.selectors.product-name:h1.ui-pdp-title}")
     private String detailNameSelector;
 
-    @Value("${app.scraper.mercadolibre.selectors.product-current-price:.ui-pdp-price .andes-money-amount__fraction}")
+    @Value("${app.scraper.mercadolibre.selectors.product-current-price:.ui-pdp-price__second-line .andes-money-amount__fraction}")
     private String detailCurrentPriceSelector;
 
     @Value("${app.scraper.mercadolibre.selectors.product-previous-price:.andes-money-amount--previous .andes-money-amount__fraction}")
@@ -49,7 +49,7 @@ public class MercadoLibreProductStrategy implements ProductScrapingStrategy {
     private String productImagesSelector;
 
     @Override
-    public ScrapedProduct extractFromListing(Element item, String source) {
+    public ScrapedProduct extractFromListing(Element item, MarketplaceSource source) {
         // SKU (igual original)
         String sku = skuExtractor.extractFromListing(item);
         if (sku == null) return null;
@@ -69,12 +69,12 @@ public class MercadoLibreProductStrategy implements ProductScrapingStrategy {
                 .images(imageExtractor.extractFromListing(item, "img[src]"))  // Configurable futuro
                 .available(availabilityExtractor.extractFromListing(item))
                 .sourceUrl(linkElement.attr("href"))
-                .source(source)
+                .source(MarketplaceSource.MERCADO_LIBRE)
                 .build();
     }
 
     @Override
-    public ScrapedProduct extractFromDetail(Document doc, String productUrl, String source) {
+    public ScrapedProduct extractFromDetail(Document doc, String productUrl, MarketplaceSource source) {
         // SKU con fallback
         String sku = skuExtractor.extractFromUrl(productUrl);
         if (sku == null) {
@@ -89,13 +89,9 @@ public class MercadoLibreProductStrategy implements ProductScrapingStrategy {
         String name = titleExtractor.extract(doc, detailNameSelector, "h1.ui-pdp-variations__subtitle");
 
         // Precios
-        BigDecimal currentPrice = priceExtractor.extract(doc, detailCurrentPriceSelector);
-        BigDecimal previousRaw = priceExtractor.extract(doc, detailPreviousPriceSelector);
+        BigDecimal previousPrice = priceExtractor.extract(doc, detailPreviousPriceSelector);
 
-        // FIX: NULL si no descuento real
-        BigDecimal previousPrice = (previousRaw != null &&
-                previousRaw.compareTo(currentPrice) > 0)
-                ? previousRaw : null;
+        BigDecimal currentPrice = priceExtractor.extract(doc, detailCurrentPriceSelector);
 
         // Imágenes + disponible
         List<String> images = imageExtractor.extractFromDetail(doc, productImagesSelector);
@@ -105,11 +101,11 @@ public class MercadoLibreProductStrategy implements ProductScrapingStrategy {
                 .sku(sku)
                 .name(name)
                 .currentPrice(currentPrice)
-                .previousPrice(previousPrice)  // null si no descuento
+                .previousPrice(previousPrice)
                 .images(images)
                 .available(available)
                 .sourceUrl(productUrl)
-                .source(source)
+                .source(MarketplaceSource.MERCADO_LIBRE)
                 .build();
     }
 }
