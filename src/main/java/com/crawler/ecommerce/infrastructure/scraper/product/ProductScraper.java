@@ -1,13 +1,12 @@
 package com.crawler.ecommerce.infrastructure.scraper.product;
 
+import com.crawler.ecommerce.domain.model.MarketplaceSource;
 import com.crawler.ecommerce.infrastructure.dto.ScrapedProduct;
 import com.crawler.ecommerce.infrastructure.scraper.product.strategy.ProductScrapingStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +32,7 @@ public class ProductScraper {
     private final ProductScrapingStrategy mercadoLibreStrategy;  // MercadoLibreProductStrategy
 
     @Value("${app.scraper.mercadolibre.source:MERCADO_LIBRE}")
-    private String source;
+    private MarketplaceSource source;
 
     @Value("${app.scraper.mercadolibre.selectors.item:li.ui-search-result}")
     private String itemSelector;

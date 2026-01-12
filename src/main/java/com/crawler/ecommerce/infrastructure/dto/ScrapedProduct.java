@@ -1,5 +1,6 @@
 package com.crawler.ecommerce.infrastructure.dto;
 
+import com.crawler.ecommerce.domain.model.MarketplaceSource;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,5 +19,5 @@ public class ScrapedProduct {
     List<String> images;
     boolean available;
     String sourceUrl;
-    String source;
+    MarketplaceSource source;
 }

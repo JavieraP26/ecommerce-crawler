@@ -1,6 +1,7 @@
 package com.crawler.ecommerce.infrastructure.persistence.adapter;
 
 import com.crawler.ecommerce.application.port.out.ProductRepositoryPort;
+import com.crawler.ecommerce.domain.model.MarketplaceSource;
 import com.crawler.ecommerce.domain.model.Product;
 import com.crawler.ecommerce.infrastructure.persistence.jpa.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +42,7 @@ public class ProductRepositoryAdapter implements ProductRepositoryPort {
      * {@inheritDoc}
      */
     @Override
-    public Optional<Product> findBySkuAndSource(String sku, String source) {
+    public Optional<Product> findBySkuAndSource(String sku, MarketplaceSource source) {
         return productRepository.findBySkuAndSource(sku, source);
     }
 
@@ -65,7 +66,7 @@ public class ProductRepositoryAdapter implements ProductRepositoryPort {
      * {@inheritDoc}
      */
     @Override
-    public List<Product> findAllBySourceAndAvailable(String source, boolean available) {
+    public List<Product> findAllBySourceAndAvailable(MarketplaceSource source, boolean available) {
         return productRepository.findAllBySourceAndAvailable(source, available);
     }
 
@@ -73,7 +74,7 @@ public class ProductRepositoryAdapter implements ProductRepositoryPort {
      * {@inheritDoc}
      */
     @Override
-    public Set<String> findAllSkusBySource(String source) {
+    public Set<String> findAllSkusBySource(MarketplaceSource source) {
         return productRepository.findAllSkusBySource(source);
     }
 
@@ -81,7 +82,7 @@ public class ProductRepositoryAdapter implements ProductRepositoryPort {
      * {@inheritDoc}
      */
     @Override
-    public boolean existsBySkuAndSource(String sku, String source) {
+    public boolean existsBySkuAndSource(String sku, MarketplaceSource source) {
         return productRepository.existsBySkuAndSource(sku, source);
     }
 
@@ -89,7 +90,7 @@ public class ProductRepositoryAdapter implements ProductRepositoryPort {
      * {@inheritDoc}
      */
     @Override
-    public void deleteAllBySourceAndUpdatedBefore(String source, LocalDateTime cutoff) {
+    public void deleteAllBySourceAndUpdatedBefore(MarketplaceSource source, LocalDateTime cutoff) {
         productRepository.deleteAllBySourceAndUpdatedAtBefore(source, cutoff);
     }
 }

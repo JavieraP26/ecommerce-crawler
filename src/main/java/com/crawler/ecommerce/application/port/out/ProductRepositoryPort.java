@@ -1,5 +1,6 @@
 package com.crawler.ecommerce.application.port.out;
 
+import com.crawler.ecommerce.domain.model.MarketplaceSource;
 import com.crawler.ecommerce.domain.model.Product;
 
 import java.time.LocalDateTime;
@@ -34,10 +35,10 @@ public interface ProductRepositoryPort {
     /**
      * Busca por SKU+source (evita colisiones cross-site).
      * @param sku SKU producto
-     * @param source "MercadoLibre", "Paris"
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      * @return Producto único
      */
-    Optional<Product> findBySkuAndSource(String sku, String source);
+    Optional<Product> findBySkuAndSource(String sku, MarketplaceSource source);
 
     /**
      * Elimina producto por SKU (soft-delete o hard).
@@ -56,36 +57,36 @@ public interface ProductRepositoryPort {
     /**
      * Lista productos disponibles por source.
      *
-     * @param source "MercadoLibre", "Paris"
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      * @param available solo disponibles
      * @return Productos listos para venta
      */
-    List<Product> findAllBySourceAndAvailable(String source, boolean available);
+    List<Product> findAllBySourceAndAvailable(MarketplaceSource source, boolean available);
 
     /**
      * SKUs existentes por source (deduplicación crawling).
      *
-     * @param source Sitio origen
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      * @return Set SKUs para evitar duplicados
      */
-    Set<String> findAllSkusBySource(String source);
+    Set<String> findAllSkusBySource(MarketplaceSource source);
 
     /**
      * Verifica existencia SKU+source (evita duplicados).
      *
      * @param sku SKU candidato
-     * @param source Sitio origen
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      * @return true si ya existe
      */
-    boolean existsBySkuAndSource(String sku, String source);
+    boolean existsBySkuAndSource(String sku, MarketplaceSource source);
 
     /**
      * Limpia productos viejos por source (retención 30 días).
      *
-     * @param source Sitio origen
+     * @param source MarketplaceSource (MERCADO_LIBRE, PARIS, FALABELLA)
      * @param cutoff Fecha límite
      */
-    void deleteAllBySourceAndUpdatedBefore(String source, LocalDateTime cutoff);
+    void deleteAllBySourceAndUpdatedBefore(MarketplaceSource source, LocalDateTime cutoff);
 
 
 }
