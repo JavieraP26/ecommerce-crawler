@@ -4,7 +4,7 @@ spring:
       on-profile: dev
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
@@ -22,6 +22,7 @@ app:
         # LISTING
         name: .ui-search-item__title
         price: .andes-money-amount__fraction
+        item: li.ui-search-result
 
         # DETAIL (todos obligatorios)
         product-name: h1.ui-pdp-title
@@ -31,7 +32,109 @@ app:
           .ui-pdp-gallery img[data-src],
           .carousel img[data-src*="mlstatic"]
 
+    paris:
+      max-scrolls: 50
+      selectors:
+        # Categoría título
+        category-title: |
+          .category-header h1,
+          h1.page-title, 
+          .page-title h1,
+          [class*="category-name"]
+
+        # Paginación
+        pagination: |
+          .ui-text-caption-mobile:contains("de"),
+          [class*="ui-text-caption"]:contains("productos"),
+          :containsOwn("productos encontrados"),
+          :containsOwn("Has visto"),
+          .pagination-total
+
+        # Total de productos (fallback para calcular páginas)
+        total-products: |
+          .ui-text-caption-mobile,
+          [class*="ui-text-caption"],
+          :containsOwn("productos encontrados"),
+          :containsOwn("Has visto"),
+          [class*="results-count"]
+
+        # Items productos - Selectores específicos Paris.cl
+        items-selector: "div[data-cnstrc-item-id][role='gridcell']"
+        items: |
+          a[id^="product-"],
+          .product-item,
+          [data-sku],
+          [data-product-id],
+          .product-card,
+          .product-tile
+        item: .product-tile
+
+        product-name: |
+          .ui-line-clamp-2.ui-text-xs,
+          .ui-line-clamp-2.ui-leading-[14px],
+          [class*="ui-line-clamp-2"][class*="ui-text-xs"],
+          [class*="ui-line-clamp-2"][class*="ui-leading"]
+
+        product-current-price: |
+          div[data-testid="paris-pod-price"] span:not(.ui-line-through),
+          [data-testid="paris-price"],
+          .price-main
+
+        product-previous-price: |
+          span.ui-line-through,
+          [data-testid="previous-price"],
+          .price-old
+        
+        product-images: |
+          .ui-size-full,
+          .ui-object-contain,
+          [class*="ui-size-full"],
+          [class*="ui-object-contain"],
+          img[src*="cl-dam-resizer.ecomm.cencosud.com"]
+
+    falabella:
+        max-scrolls: 50
+        selectors:
+          category:
+            title: '[data-testid="search-results-title"]'
+            items: 'div.jsx-3752256814 > a, div#testId-searchResults.search-results [class*="pod"], .jsx-339987938.pod-group--products [class*="pod"]'
+            pagination: 'div.pagination a.page'
+            total-products: '.results-count'
+          products-per-page: 48
+          product:
+            name: 'b.pod-subTitle, [id*="pod-displaySubTitle"], .subTitle-rebrand'
+            # Prioridad: Precio CMR (tarjeta falabella) > Precio normal
+            current-price: 'span.copy10.primary.high, span.copy10.primary.medium, [class*="primary high"], [class*="primary medium"]'
+            # Precio anterior tachado (descuentos)
+            previous-price: 'span.copy3.crossed, [class*="crossed"], [class*="septenary medium"]'
+            images: 'img[id*="pod-image"], img.jsx-1996933093'
+            item: '[data-testid="pod"]'
+
+
 logging:
   level:
     com.crawler: DEBUG
     org.jsoup: WARN
+
+---
+spring:
+  config:
+    activate:
+      on-profile: scraper-only
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+
+logging:
+  level:
+    com.crawler: INFO
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs

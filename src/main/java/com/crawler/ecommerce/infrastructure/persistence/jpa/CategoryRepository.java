@@ -2,6 +2,7 @@ package com.crawler.ecommerce.infrastructure.persistence.jpa;
 
 import com.crawler.ecommerce.domain.model.Category;
 import com.crawler.ecommerce.domain.model.CategoryStatus;
+import com.crawler.ecommerce.domain.model.MarketplaceSource;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,9 +15,30 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Spring Data JPA repository para operaciones CRUD de {@link Category}.
- * Implementa persistencia para CategoryRepositoryPort.
- * Métodos siguen naming conventions de Spring Data JPA.
+ * Spring Data JPA repository para operaciones CRUD y específicas de {@link Category}.
+ *
+ * Implementa persistencia para CategoryRepositoryPort con optimizaciones:
+ * - Operaciones CRUD estándar mediante JpaRepository
+ * - Consultas específicas del dominio de crawling
+ * - Queries nativas JPQL para actualizaciones parciales
+ * - Uso de índices para performance optimizada
+ *
+ * ------------------------------------------------------------------------
+ * NOTA ARQUITECTÓNICA — REPOSITORY JPA
+ *
+ * Este repository sigue principios de diseño robustos:
+ *
+ * - CONVENCIONES SPRING DATA: Métodos derivados automáticamente
+ * - CONSULTAS OPTIMIZADAS: JPQL nativo para operaciones específicas
+ * - ÍNDICES APROVECHADOS: Usa idx_category_url y idx_category_source
+ * - TRANSACCIONES DECLARATIVAS: @Transactional en operaciones de modificación
+ *
+ * Las consultas están diseñadas para:
+ * - Evitar N+1 en relaciones (EntityGraph en ProductRepository)
+ * - Operaciones batch eficientes para crawling masivo
+ * - Actualizaciones parciales sin cargar entidades completas
+ * - Consultas específicas del dominio de crawling
+ * ------------------------------------------------------------------------
  */
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
@@ -43,7 +65,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
      * @param source Sitio origen
      * @return Categorías listas para crawling
      */
-    List<Category> findAllBySourceAndStatus(String source, CategoryStatus status);
+    List<Category> findAllBySourceAndStatus(MarketplaceSource source, CategoryStatus status);
 
     /**
      * Actualiza totalPages de categoría específica.
@@ -75,8 +97,10 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
      */
     @Modifying
     @Transactional
-    @Query("UPDATE Category c SET c.status = 'PAGINACION_COMPLETA', c.lastCrawledAt = :completedAt WHERE c.sourceUrl = :sourceUrl")
-    int markCrawlingComplete(@Param("sourceUrl") String sourceUrl, @Param("completedAt") LocalDateTime completedAt);
+    @Query("UPDATE Category c SET c.status = :status, c.lastCrawledAt = :completedAt WHERE c.sourceUrl = :sourceUrl")
+    int markCrawlingComplete(@Param("sourceUrl") String sourceUrl,
+                             @Param("status") CategoryStatus status,
+                             @Param("completedAt") LocalDateTime completedAt);
 
     /**
      * Cuenta categorías por source.
@@ -84,5 +108,5 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
      * @param source Sitio origen
      * @return Total categorías
      */
-    long countBySource(String source);
+    long countBySource(MarketplaceSource source);
 }

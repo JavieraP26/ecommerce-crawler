@@ -2,8 +2,33 @@ package com.crawler.ecommerce.domain.model;
 
 import lombok.Getter;
 
-/*
+/**
  * Fuentes de e-commerce soportadas por el crawler.
+ *
+ * Define los marketplaces disponibles para extracción de datos:
+ * - Identifica únicamente cada sitio para evitar colisiones de SKUs
+ * - Facilita routing de estrategias de scraping específicas
+ * - Soporta configuración diferenciada por marketplace
+ *
+ * Cada marketplace tiene características particulares:
+ * - MercadoLibre: Paginación tradicional, estructura estable
+ * - Paris.cl: Scroll infinito, requiere Selenium
+ * - Falabella: Anti-bot protection, URLs dinámicas
+ *
+ * ------------------------------------------------------------------------
+ * NOTA ARQUITECTÓNICA — VALUE OBJECT
+ *
+ * Este enum sigue principios de Domain-Driven Design:
+ *
+ * - TIPO SEGURO: El compilador garantiza valores válidos
+ * - IDENTIFICADOR ÚNICO: Cada valor representa un marketplace distinto
+ * - EXTENSIBILIDAD: Fácil agregar nuevos marketplaces
+ *
+ * El campo value facilita persistencia y serialización:
+ * - Almacenamiento en base de datos como VARCHAR
+ * - Serialización JSON para APIs REST
+ * - Configuración YAML por marketplace
+ * ------------------------------------------------------------------------
  */
 
 @Getter

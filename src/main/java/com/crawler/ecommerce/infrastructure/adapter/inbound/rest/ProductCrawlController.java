@@ -1,34 +1,56 @@
 package com.crawler.ecommerce.infrastructure.adapter.inbound.rest;
 
 import com.crawler.ecommerce.application.port.in.CrawlProductUseCasePort;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Controlador REST para operaciones de crawling de productos.
- * 
- * Expone los casos de uso de aplicación a través de HTTP/JSON.
- * No contiene lógica de negocio, solo delega a CrawlProductUseCasePort.
- * 
- * Perfiles: Disponible solo en entornos de desarrollo y scraping
- * para evitar exposición en producción.
- * 
- * @Profile({"dev", "scraper-only"}) Disponible solo en entornos de desarrollo/scraping
+ * Controlador REST para crawling de productos individuales y batch.
+ *
+ * Expone el caso de uso CrawlProductUseCasePort a través de HTTP/JSON:
+ * - Crawling de productos individuales (fichas completas)
+ * - Procesamiento batch de múltiples URLs
+ * - Operación asíncrona con respuesta inmediata
+ *
+ * Diseñado para integración flexible:
+ * - Soporte para query parameters (individual) y JSON body (batch)
+ * - Validación de URLs y límites de procesamiento
+ * - Métricas de procesamiento (guardados vs fallidos)
+ * - Logging detallado para debugging y monitoreo
+ *
+ * ------------------------------------------------------------------------
+ * NOTA ARQUITECTÓNICA — ADAPTER INBOUND
+ *
+ * Este controlador sigue principios de Hexagonal Architecture:
+ *
+ * - ADAPTER INBOUND: Convierte HTTP/JSON a llamadas de dominio
+ * - DESACOPLAMIENTO: No contiene lógica de negocio
+ * - DELEGACIÓN PURA: Todos los casos de uso se delegan a CrawlProductUseCasePort
+ * - VALIDACIÓN: Usa anotaciones @Validated y validaciones manuales
+ *
+ * Los endpoints están diseñados para:
+ * - Integración con schedulers de productos individuales
+ * - Procesamiento batch de categorías completas
+ * - Testing y debugging de scraping de productos
+ * - Monitorización de métricas de éxito/fracaso
+ * ------------------------------------------------------------------------
  */
 @RestController
 @RequestMapping("/api/crawl")
 @RequiredArgsConstructor
 @Profile({"dev", "scraper-only"})
 @Slf4j
-@Tag(name = "Product Crawling", description = "Crawling fichas/listados + persist")
+@Validated
 public class ProductCrawlController {
 
     private final CrawlProductUseCasePort crawlProductUseCase;
@@ -42,9 +64,8 @@ public class ProductCrawlController {
      * @param url URL completa de la ficha del producto a scrapear
      * @return Confirmación de recepción del pedido de crawling
      */
-    @Operation(summary = "Crawl + persist producto individual")
     @PostMapping("/product")
-    public ResponseEntity<Map<String, Object>> crawlProduct(@RequestParam String url) {
+    public ResponseEntity<Map<String, Object>> crawlProduct(@RequestParam @NotBlank String url) {
         log.info("API: Crawl producto: {}", url);
         crawlProductUseCase.crawlProduct(url);
         return ResponseEntity.ok(Map.of("success", true, "message", "Crawleado/persistido", "url", url));
@@ -57,13 +78,19 @@ public class ProductCrawlController {
      * Ideal para procesar categorías completas o listados grandes.
      * 
      * @param urls Lista de URLs de productos a scrapear
-     * @return Confirmación con cantidad de URLs procesadas
+     * @return Confirmación con cantidad de productos guardados exitosamente
      */
-    @Operation(summary = "Crawl + persist batch URLs")
     @PostMapping("/products")
-    public ResponseEntity<Map<String, Object>> crawlProducts(@RequestBody List<String> urls) {
-        log.info("API: Crawl batch: {}", urls.size());
-        crawlProductUseCase.crawlProducts(urls);
-        return ResponseEntity.ok(Map.of("success", true, "processed", urls.size()));
+    public ResponseEntity<Map<String, Object>> crawlProducts(@RequestBody @NotEmpty @Size(min = 1, max = 100) List<String> urls) {
+        log.info("API: Crawl batch: {} URLs", urls.size());
+        
+        int savedCount = crawlProductUseCase.crawlProducts(urls);
+        
+        return ResponseEntity.ok(Map.of(
+                "success", true, 
+                "processed", urls.size(),
+                "saved", savedCount,
+                "failed", urls.size() - savedCount
+        ));
     }
 }

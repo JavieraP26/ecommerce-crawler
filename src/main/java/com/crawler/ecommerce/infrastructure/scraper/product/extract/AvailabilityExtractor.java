@@ -6,11 +6,31 @@ import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Component;
 
 /**
- * Detecta disponibilidad de productos.
- * Lógica ML: texto keywords + botón compra.
+ * Detecta disponibilidad de productos mediante análisis de texto.
  *
- * listing: Keywords en item text.
- * detail: Keywords página + botón compra.
+ * Implementa lógica basada en Machine Learning simple:
+ * - Keywords de "no disponibilidad" (agotado, sin stock)
+ * - Keywords de "disponibilidad" (botón de compra)
+ *
+ * ------------------------------------------------------------------------
+ * NOTA ARQUITECTÓNICA — EXTRACTOR COMPONENT
+ *
+ * Este extractor sigue principios de diseño robustos:
+ *
+ * - HEURÍSTICA SIMPLE: Reglas basadas en texto plano
+ * - RESPONSABILIDAD ÚNICA: Solo detección de disponibilidad
+ * - ROBUSTEZ: Maneja múltiples patrones de texto
+ * - CONFIGURACIÓN: Sin dependencias externas, solo texto
+ *
+ * La lógica está diseñada para:
+ * - Alta precisión para casos positivos (evita falsos negativos)
+ * - Baja complejidad para mantenimiento
+ *
+ * Los patrones de detección siguen esta prioridad:
+ * - Keywords negativos: "agotado", "sin stock", "no disponible"
+ * - Keywords positivos: "comprar", "agregar", "comprar ahora"
+ * - Contexto: listing vs detail (diferentes niveles de certeza)
+ * ------------------------------------------------------------------------
  */
 @Component
 @Slf4j

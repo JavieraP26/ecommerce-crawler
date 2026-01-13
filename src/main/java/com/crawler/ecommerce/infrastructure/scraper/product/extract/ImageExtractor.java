@@ -9,10 +9,29 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Extrae imágenes limpias.
- * Filtros: logos, icons, duplicados.
+ * Extrae imágenes limpias de productos.
  *
- * Ambos métodos devuelven galería **completa** filtrada.
+ * Implementa filtrado inteligente para optimizar calidad:
+ * - Filtros básicos: logos, icons, imágenes de baja calidad
+ * - Prioridad: data-src > src > href
+ * - Límites configurable para control de cantidad
+ *
+ * ------------------------------------------------------------------------
+ * NOTA ARQUITECTÓNICA — EXTRACTOR COMPONENT
+ *
+ * Este extractor sigue principios de diseño robustos:
+ *
+ * - CALIDAD SOB CONTROLADA: Filtrado estricto de URLs
+ * - ROBUSTEZ: Múltiples criterios de filtrado configurables
+ * - EFICIENCIA: Límites y prioridades optimizados para rendimiento
+ * - REUTILIZACIÓN: Componente genérico para cualquier marketplace
+ *
+ * Los filtros implementados son:
+ * - Exclusión de logos y assets estáticos
+ * - Validación de protocolos (http/https)
+ * - Control de tamaño y cantidad de imágenes
+ *
+ * ------------------------------------------------------------------------
  */
 @Component
 @Slf4j
