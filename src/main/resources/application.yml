@@ -11,26 +11,4 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASS}
     driver-class-name: org.postgresql.Driver
-
 ---
-spring:
-  config:
-    activate:
-      on-profile: scraper-only
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
-      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
-
-logging:
-  level:
-    com.crawler: INFO
-
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
-    operations-sorter: alpha
-  api-docs:
-    path: /v3/api-docs

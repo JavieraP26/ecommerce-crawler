@@ -15,13 +15,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Strategy específica para MercadoLibre con coordinación de extractors.
+ * Strategy específica para Falabella.cl con coordinación de extractors.
  *
- * Implementa scraping adaptado a las características particulares de MercadoLibre:
+ * Implementa scraping adaptado a las características particulares de Falabella.cl:
  * - Coordina 5 extractors especializados (SKU, título, precio, imágenes, disponibilidad)
- * - Selectores CSS estándar y configurables via YAML
- * - Soporte para formato MLA\d+ (estándar del marketplace)
- * - Manejo robusto de precios con descuentos (precio anterior tachado)
+ * - Selectores CSS específicos y configurables via YAML
+ * - Maneja tradeoffs con URLs dinámicas y SKU generation
  *
  * ------------------------------------------------------------------------
  * NOTA ARQUITECTÓNICA — STRATEGY CONCRETA
@@ -30,22 +29,22 @@ import java.util.Objects;
  *
  * - COORDINACIÓN: Orquesta múltiples extractors especializados
  * - CONFIGURACIÓN YAML: Selectores configurables para adaptación a cambios
- * - ESTÁNDAR MLA: Soporte nativo para formato MLA\d+
- * - PRECIO CON DESCUENTOS: Manejo de precios anteriores tachados
+ * - TRADEOFF HANDLING: Maneja decisiones de diseño específicas
+ * - MARKETPLACE ABSTRACTION: Aísla lógica particular de Falabella.cl
  * - EXTRACTORS INTEGRADOS: Reutilización de componentes modulares
  *
  * Las características particulares manejadas son:
- * - Estructura HTML estable y consistente en MercadoLibre
- * - Formato de SKU estándar (MLA seguido de números)
- * - Sistema de precios con descuentos visibles (precio tachado)
- * - URLs de producto predecibles y consistentes
- * - Disponibilidad detectable mediante botones de compra
+ * - URLs de producto dinámicas (requieren validación especial)
+ * - Estructura HTML que cambia frecuentemente (requiere mantenimiento)
+ * - Protección anti-bot que requiere headers específicos
+ * - Detección de disponibilidad con keywords específicas
+ * - Generación de SKUs sintéticos para productos sin identificadores
  * ------------------------------------------------------------------------
  */
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class MercadoLibreProductStrategy implements ProductScrapingStrategy {
+public class FalabellaProductStrategy implements ProductScrapingStrategy {
 
     // Extractors inyectados
     private final SkuExtractor skuExtractor;
@@ -55,25 +54,19 @@ public class MercadoLibreProductStrategy implements ProductScrapingStrategy {
     private final AvailabilityExtractor availabilityExtractor;
 
     // Selectores inyectados (yml)
-    @Value("${app.scraper.mercadolibre.selectors.name:.ui-search-item__title}")
-    private String listingNameSelector;
-
-    @Value("${app.scraper.mercadolibre.selectors.price:.andes-money-amount__fraction}")
-    private String listingPriceSelector;
-
-    @Value("${app.scraper.mercadolibre.selectors.product-name:h1.ui-pdp-title}")
+    @Value("${app.scraper.falabella.selectors.product-name:.pod-title, h1.product-title}")
     private String detailNameSelector;
 
-    @Value("${app.scraper.mercadolibre.selectors.product-current-price:.ui-pdp-price__second-line .andes-money-amount__fraction}")
+    @Value("${app.scraper.falabella.selectors.product-current-price:[data-testid='price-current'], .price-current}")
     private String detailCurrentPriceSelector;
 
-    @Value("${app.scraper.mercadolibre.selectors.product-previous-price:.andes-money-amount--previous .andes-money-amount__fraction}")
+    @Value("${app.scraper.falabella.selectors.product-previous-price:.price-previous, .price-old}")
     private String detailPreviousPriceSelector;
 
-    @Value("${app.scraper.mercadolibre.selectors.product-images:figure.ui-pdp-gallery__figure img}")
+    @Value("${app.scraper.falabella.selectors.product-images:.product-gallery img, .product-images img}")
     private String productImagesSelector;
 
-    @Value("${app.scraper.mercadolibre.selectors.item:li.ui-search-result}")
+    @Value("${app.scraper.falabella.selectors.item:[data-testid='pod']}")
     private String itemSelector;
 
     @Override
@@ -91,10 +84,10 @@ public class MercadoLibreProductStrategy implements ProductScrapingStrategy {
 
         return ScrapedProduct.builder()
                 .sku(sku)
-                .name(titleExtractor.extract(item, listingNameSelector))
-                .currentPrice(priceExtractor.extract(item, listingPriceSelector))
+                .name(titleExtractor.extract(item, ".pod-title, h1, h2, h3, .product-name"))
+                .currentPrice(priceExtractor.extract(item, "[data-testid='price-current'], .price-current, .price"))
                 .previousPrice(priceExtractor.extractPrevious(item))
-                .images(imageExtractor.extractFromListing(item, "img[src]"))  // Configurable futuro
+                .images(imageExtractor.extractFromListing(item, "img"))
                 .available(availabilityExtractor.extractFromListing(item))
                 .sourceUrl(linkElement.attr("href"))
                 .source(source)
@@ -114,11 +107,10 @@ public class MercadoLibreProductStrategy implements ProductScrapingStrategy {
         }
 
         // Name con fallback
-        String name = titleExtractor.extract(doc, detailNameSelector, "h1.ui-pdp-variations__subtitle");
+        String name = titleExtractor.extract(doc, detailNameSelector, "h1", "h2", ".product-title");
 
         // Precios
         BigDecimal previousPrice = priceExtractor.extract(doc, detailPreviousPriceSelector);
-
         BigDecimal currentPrice = priceExtractor.extract(doc, detailCurrentPriceSelector);
 
         // Imágenes + disponible
@@ -139,12 +131,12 @@ public class MercadoLibreProductStrategy implements ProductScrapingStrategy {
 
     @Override
     public MarketplaceSource source() {
-        return MarketplaceSource.MERCADO_LIBRE;
+        return MarketplaceSource.FALABELLA;
     }
 
     @Override
     public boolean matchesUrl(String url) {
-        return url.toLowerCase().contains("mercadolibre");
+        return url.toLowerCase().contains("falabella.com");
     }
 
     @Override

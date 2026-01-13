@@ -6,22 +6,57 @@ import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Extrae y parsea precios (actual + anterior).
+ *
+ * Maneja múltiples formatos y selectores para máxima compatibilidad:
+ * - Selector único con múltiples selectores separados por coma
+ * - Parsing robusto con manejo de errores
+ * - Soporte para precios ML (hardcode) y generales
+ *
+ * ------------------------------------------------------------------------
+ * NOTA ARQUITECTÓNICA — EXTRACTOR COMPONENT
+ *
+ * Este extractor sigue principios de diseño robustos:
+ *
+ * - PARSING ROBUSTO: Manejo de diferentes formatos de precios
+ * - NULL SAFETY: Manejo seguro de valores nulos y errores
+ * - CONFIGURACIÓN EXTERNA: Selectores via YAML, no hardcodeados
+ * - PRECISIÓN FINANCIERA: Parsing exacto con decimales
+ *
+ * Los métodos están diseñados para:
+ * - Extraer precio actual (más importante)
+ * - Extraer precio anterior (para descuentos)
+ * - Soportar múltiples selectores por marketplace
+ * - Retornar valores válidos o null cuando falla extracción
+ * ------------------------------------------------------------------------
  */
 @Component
 @Slf4j
 public class PriceExtractor {
 
     /**
-     * Extrae precio con selector.
+     * Extrae precio con selector (soporta múltiples selectores separados por coma).
      */
     public BigDecimal extract(Element element, String selector) {
-        Element priceElement = element.selectFirst(selector);
-        return parsePrice(priceElement);
+        if (selector == null || selector.trim().isEmpty()) {
+            return null;
+        }
+        
+        // Si tiene comas, intenta cada selector hasta encontrar uno válido
+        String[] selectors = selector.split(",");
+        for (String sel : selectors) {
+            sel = sel.trim();
+            if (!sel.isEmpty()) {
+                Element priceElement = element.selectFirst(sel);
+                BigDecimal price = parsePrice(priceElement);
+                if (price != null && price.compareTo(BigDecimal.ZERO) > 0) {
+                    return price;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -41,23 +76,26 @@ public class PriceExtractor {
             return null;
         }
         
+        // Si tiene comas, intenta cada selector hasta encontrar uno válido
         String[] selectors = selector.split(",");
-        
         for (String sel : selectors) {
             sel = sel.trim();
             if (!sel.isEmpty()) {
                 Element priceElement = doc.selectFirst(sel);
                 BigDecimal price = parsePrice(priceElement);
                 if (price != null && price.compareTo(BigDecimal.ZERO) > 0) {
-                    log.debug("Precio encontrado con selector '{}': {}", sel, price);
-                    return price; // Devolver el primer precio válido encontrado
+                    return price;
                 }
             }
         }
-        
-        log.warn("No se pudo extraer precio con ningún selector: {}", selector);
         return null;
     }
+
+
+    public BigDecimal extractOfficialStore(Document doc, String selector) {
+        return extract(doc, selector);
+    }
+    
 
     /**
      * Parser central (solo números).

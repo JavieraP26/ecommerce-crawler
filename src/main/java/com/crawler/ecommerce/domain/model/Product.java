@@ -15,7 +15,35 @@ import java.util.List;
 
 /**
  * Entidad de dominio que representa un producto extraído desde sitios e-commerce.
- * Almacena información completa del producto incluyendo precios, imágenes y disponibilidad.
+ *
+ * Almacena información completa del producto para el negocio:
+ * - Identificación: SKU único, nombre, marketplace de origen
+ * - Comercial: Precios actual y anterior, disponibilidad
+ * - Contenido: Galería de imágenes, URL de origen
+ * - Relacional: Categoría padre y metadata de auditoría
+ *
+ * Diseñada para soportar casos de uso de e-commerce:
+ * - Deduplicación por SKU + source para evitar duplicados cross-site
+ * - Detección automática de descuentos y ofertas
+ * - Actualización incremental de precios y disponibilidad
+ * - Consultas optimizadas para catálogos y búsquedas
+ *
+ * ------------------------------------------------------------------------
+ * NOTA ARQUITECTÓNICA — ENTIDAD DE DOMINIO
+ *
+ * Esta entidad sigue principios de Domain-Driven Design:
+ *
+ * - RIQUEZA COMPORTAMENTAL: Métodos de negocio (hasDiscount, getDiscountPercentage)
+ * - INVARIANTES PROTEGIDOS: Validaciones encapsuladas y valores por defecto
+ * - IDENTIDAD CLARA: SKU como identificador natural del negocio
+ * - RELACIONES EXPLÍCITAS: Categoría opcional para consultas jerárquicas
+ *
+ * Los índices están optimizados para consultas operativas:
+ * - idx_product_sku: Búsqueda rápida y deduplicación (único)
+ * - idx_product_source: Filtrado por marketplace
+ * - idx_product_available: Consultas de catálogo (solo disponibles)
+ * - idx_product_category: Navegación jerárquica
+ * ------------------------------------------------------------------------
  */
 
 @Entity
@@ -56,8 +84,9 @@ public class Product {
     /**
      * Precio actual del producto en la moneda local del sitio.
      * Precio preseleccionado en UI (radio button activo).
+     * Puede ser null si no se pudo extraer el precio.
      */
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(nullable = true, precision = 12, scale = 2)
     private BigDecimal currentPrice;
 
     /**
@@ -92,9 +121,9 @@ public class Product {
     /**
      * Categoría a la que pertenece el producto (relación opcional).
      */
-    //@ManyToOne(fetch = FetchType.LAZY)
-    //@JoinColumn(name = "category_id")
-    //private Category category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = true)
+    private Category category;
 
     /**
      * Lista de URLs de imágenes del producto.

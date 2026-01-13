@@ -7,11 +7,29 @@ import java.util.List;
 /**
  * Puerto de salida para scraping de productos.
  * 
- * Desacopla la aplicación de detalles de implementación (Jsoup, HTTP, estrategias específicas).
+ * Desacopla completamente la aplicación de detalles de implementación:
+ * - Jsoup para parsing HTML estático (MercadoLibre, Falabella)
+ * - Selenium para lazy loading y JavaScript (Paris.cl)
+ * - Estrategias específicas por marketplace y tipo de página
+ *
  * Define el contrato que la capa de aplicación debe usar para scraping
- * sin conocer detalles técnicos de la infraestructura.
- * 
- * Principio: Application layer solo conoce contratos, no infraestructura.
+ * sin conocer detalles técnicos de la infraestructura HTTP, selectores CSS,
+ * o manejo de JavaScript asíncrono.
+ *
+ * ------------------------------------------------------------------------
+ * NOTA ARQUITECTÓNICA — PATRÓN ADAPTER
+ *
+ * Este puerto sigue el patrón Adapter de Hexagonal Architecture:
+ *
+ * - CONTRATO ESTABLE: Application layer depende solo de esta interfaz
+ * - IMPLEMENTACIÓN MÚLTIPLE: Distintas estrategias por marketplace/tipo
+ * - PRINCIPIO DE INVERSIÓN: Infraestructura depende del contrato
+ * - AISLAMIENTO: La aplicación no conoce HTML, HTTP o Selenium
+ *
+ * Los métodos retornan DTOs (ScrapedProduct) que contienen datos
+ * estructurados y normalizados listos para mapeo al dominio,
+ * evitando que la aplicación conozca estructuras HTML específicas.
+ * ------------------------------------------------------------------------
  */
 public interface ProductScraperPort {
 

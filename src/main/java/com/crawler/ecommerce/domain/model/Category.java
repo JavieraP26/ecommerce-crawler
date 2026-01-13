@@ -11,7 +11,33 @@ import java.time.LocalDateTime;
 
 /**
  * Entidad de dominio que representa una categoría de productos en un sitio e-commerce.
- * Almacena metadatos de la categoría incluyendo paginación y estadísticas de crawling.
+ *
+ * Almacena metadatos esenciales para el proceso de crawling:
+ * - Información básica: nombre, breadcrumb, marketplace de origen
+ * - Metadata de paginación: totalPages, productsPerPage
+ * - Estado del crawling: status, lastCrawledAt, totalProducts
+ *
+ * Diseñada para soportar crawling incremental y monitoreo del estado:
+ * - Permite reanudar crawling desde última página procesada
+ * - Facilita detección de cambios en estructura del sitio
+ * - Soporta scheduler de recrawling periódico
+ *
+ * ------------------------------------------------------------------------
+ * NOTA ARQUITECTÓNICA — ENTIDAD DE DOMINIO
+ *
+ * Esta entidad sigue principios de Domain-Driven Design:
+ *
+ * - RIQUEZA DE DATOS: Contiene toda la información necesaria
+ *   para los casos de uso de crawling sin depender de servicios externos.
+ * - IDENTIDAD CLARA: sourceUrl como identificador natural único
+ *   además del ID sintético de base de datos.
+ * - INVARIANTES PROTEGIDOS: Estados y validaciones encapsulados
+ *   a través de enums y valores por defecto seguros.
+ *
+ * Los índices están optimizados para consultas operativas del crawler:
+ * - idx_category_url: Evita duplicados y permite upsert eficiente
+ * - idx_category_source: Facilita procesamiento por marketplace
+ * ------------------------------------------------------------------------
  */
 
 @EntityListeners(AuditingEntityListener.class)
@@ -62,7 +88,8 @@ public class Category {
      * Valores esperados: "MercadoLibre", "Paris", etc.
      */
     @Column(nullable = false, length = 50)
-    private String source;
+    @Enumerated(EnumType.STRING)
+    private MarketplaceSource source;
 
     /**
      * URL completa de la categoría en el sitio origen.
@@ -90,6 +117,7 @@ public class Category {
      * Estado de la categoría según resultado del crawling.
      */
     @Column(nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
     private CategoryStatus status = CategoryStatus.ACTIVA;
 

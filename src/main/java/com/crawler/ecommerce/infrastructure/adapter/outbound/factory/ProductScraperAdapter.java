@@ -9,16 +9,34 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Adaptador que implementa ProductScraperPort usando la infraestructura de scraping.
- * 
- * Convierte la dependencia concreta (ProductScraper con Jsoup/estrategias)
- * en el contrato de aplicación (ProductScraperPort).
- * 
- * Patrón Adapter: Permite que la capa de aplicación use scraping
- * sin depender de detalles de implementación específicos.
- * 
- * Clean Architecture: La capa de aplicación solo conoce interfaces,
- * no clases concretas de infraestructura.
+ * Adaptador que implementa ProductScraperPort usando infraestructura de scraping.
+ *
+ * Convierte el contrato de aplicación (ProductScraperPort) en llamadas
+ * a la implementación concreta de infraestructura (ProductScraper):
+ * - Delega scraping de productos individuales (fichas)
+ * - Delega scraping de listados (categorías/búsquedas)
+ * - Mantiene desacoplamiento completo entre capas
+ *
+ * ------------------------------------------------------------------------
+ * NOTA ARQUITECTÓNICA — ADAPTER OUTBOUND
+ *
+ * Este adaptador sigue el patrón Adapter de Hexagonal Architecture:
+ *
+ * - CONTRATO ESTABLE: Application layer depende solo del puerto
+ * - IMPLEMENTACIÓN VARIABLE: Infraestructura puede cambiar sin afectar aplicación
+ * - INVERSIÓN DE DEPENDENCIAS: Infraestructura depende del contrato
+ * - DELEGACIÓN PURA: Métodos directos sin lógica adicional
+ *
+ * El adaptador permite:
+ * - Testing unitario con mocks del puerto
+ * - Cambio de implementación de scraping sin modificar aplicación
+ * - Múltiples estrategias por marketplace (Jsoup, Selenium)
+ * - Inyección de dependencias limpia con Spring
+ *
+ * Soporta los dos modos de scraping:
+ * - Individual: Fichas completas de productos
+ * - Batch: Listados de categorías o resultados de búsqueda
+ * ------------------------------------------------------------------------
  */
 @Component
 @RequiredArgsConstructor

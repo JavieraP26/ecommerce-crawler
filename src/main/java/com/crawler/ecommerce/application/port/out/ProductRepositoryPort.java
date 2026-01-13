@@ -9,9 +9,41 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Puerto de salida para operaciones CRUD de {@link Product}.
- * Abstrae infraestructura (JPA, MongoDB, Redis) de capa aplicación.
+ * Puerto de salida para persistencia de {@link Product}.
+ *
+ * Abstrae infraestructura (JPA, MongoDB, Redis) de la capa de aplicación.
+ * Define operaciones necesarias para crawling, deduplicación y batch processing.
+ *
+ * ------------------------------------------------------------------------
+ * NOTA ARQUITECTÓNICA — DISEÑO ORIENTADO A CASOS DE USO
+ *
+ * Este RepositoryPort no pretende ser un CRUD genérico.
+ * Expone operaciones específicas del dominio de crawling de productos:
+ *
+ * - deduplicación por SKU + source,
+ * - persistencia batch por página,
+ * - consultas operativas para crawling incremental,
+ * - limpieza por políticas de retención.
+ *
+ * Aunque algunas operaciones podrían modelarse como save() sobre la entidad
+ * completa, se opta por métodos explícitos por razones pragmáticas:
+ *
+ * - EFICIENCIA: evita rehidratar entidades completas en procesos batch.
+ * - CLARIDAD SEMÁNTICA: expresa acciones concretas del dominio
+ *   (ej: "existe SKU", "limpiar productos antiguos").
+ * - ALINEACIÓN CON CASOS DE USO: el port refleja lo que la aplicación
+ *   necesita del almacenamiento, no la estructura de la base de datos.
+ *
+ * CONSISTENCIA:
+ * Este diseño es intencionalmente simétrico a CategoryRepositoryPort.
+ *
+ * REFACTOR FUTURO:
+ * Si aparecen múltiples casos de uso con patrones similares,
+ * estas operaciones podrán agruparse bajo servicios de dominio
+ * o comandos de más alto nivel.
+ * ------------------------------------------------------------------------
  */
+
 public interface ProductRepositoryPort {
 
     /**
@@ -88,5 +120,9 @@ public interface ProductRepositoryPort {
      */
     void deleteAllBySourceAndUpdatedBefore(MarketplaceSource source, LocalDateTime cutoff);
 
+    /**
+     * SKUs existentes por categoría (anti-duplicados París infinite scroll).
+     */
+    List<String> findSkusByCategory(Long categoryId);
 
 }
